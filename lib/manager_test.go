@@ -36,8 +36,8 @@ func TestNewManager(t *testing.T) {
 	}
 
 	cases := []testCase{
-		{limit: 100 ,data:[]byte(`hello bob`)},
-		{limit: 2 , data:[]byte(strings.Repeat("Hello alice",20))},
+		//{limit: 100 ,data:[]byte(`hello bob`)},
+		{limit: 2 , data:[]byte(strings.Repeat("Hello alice",5))},
 		{limit: 4,data: []byte(strings.Repeat("Hello you again",100))},
 		{limit: 8 , data: []byte("h")},
 		{limit: 1000 , data: []byte(strings.Repeat("Hello. This will be a long string",10000))},
@@ -48,11 +48,12 @@ func TestNewManager(t *testing.T) {
 		manager := NewManager(item.limit)
 		dataToTest := item.data
 		ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			http.ServeContent(writer,request ,"hey" ,time.Now() ,bytes.NewReader(dataToTest))
+			http.ServeContent(writer,request ,"Hello" ,time.Now() ,bytes.NewReader(dataToTest))
 		}))
 		resData , _ := manager.DownloadBody(ts.URL)
 		ts.Close()
-		if bytes.Compare(resData , dataToTest) != 0 {
+		comparison := bytes.Compare(resData, dataToTest)
+		if comparison != 0 {
 			t.Errorf("Different data received")
 		}
 	}
