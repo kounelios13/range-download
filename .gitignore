@@ -1,2 +1,4 @@
 .idea
 *.jpg
+foo*
+*.json

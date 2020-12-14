@@ -8,18 +8,18 @@ import (
 	"strconv"
 )
 
-type Manager struct{
+type DownloadManager struct{
 	limit int
 }
 
 
-func NewManager(limit int) *Manager{
-	return &Manager{
+func NewManager(limit int) *DownloadManager {
+	return &DownloadManager{
 		limit: limit,
 	}
 }
 
-func (m *Manager) DownloadBody(url string ) ([]byte ,error){
+func (m *DownloadManager) DownloadBody(url string ) ([]byte ,error){
 	// First we need to determine the filesize
 	body := make([]byte ,0)
 	response , err := http.Head(url) // We perform a Head request to get header information
@@ -32,12 +32,25 @@ func (m *Manager) DownloadBody(url string ) ([]byte ,error){
 	}
 
 	maxConnections := m.limit // Number of maximum concurrent co routines
-	bodySize , _ := strconv.Atoi(response.Header.Get("Content-Length"))
+	// need to ensure that if we use maxConnections we won't wxceed original file size (in case it is to small)
+	bodySize , e := strconv.Atoi(response.Header.Get("Content-Length"))
+	if e != nil{
+		log.Fatalln(e)
+	}
 	bufferSize :=(bodySize) / (maxConnections)
 	diff := bodySize % maxConnections
+	if bufferSize == 0{
+		// Data size is to small to break into ranged requests . Perform a simple request instead
+		maxConnections = 1 // force a single request
+		bufferSize = bodySize // by setting buffersize to body size we force the code to perform a single range request
+		// and get all the bytes at once
+	}
 	read := 0
 	for i:=0;i<maxConnections;i++{
 		min := bufferSize * i
+		if i != 0{
+			min++
+		}
 		max := bufferSize * (i+1)
 		if i==maxConnections-1{
 			max+=diff // Check to see if we have any leftover data to retrieve for the last request
@@ -58,8 +71,6 @@ func (m *Manager) DownloadBody(url string ) ([]byte ,error){
 		read = read + len(data)
 		body = append(body, data...)
 	}
-
 	log.Println("File size:",bodySize , "Downloaded size:",len(body)," Actual read:",read)
 	return body, nil
-
 }
