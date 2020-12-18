@@ -2,3 +2,9 @@
 *.jpg
 foo*
 *.json
+main.go
+*.prof
+cpu.*rof
+*.trace
+concurent-downloader
+lib.test
