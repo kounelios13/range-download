@@ -1,3 +1,3 @@
-module concurent-downloader
+module range-download
 
 go 1.15
