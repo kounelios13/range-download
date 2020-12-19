@@ -181,3 +181,51 @@ func Test_normalizeMaxConnections(t *testing.T) {
 		})
 	}
 }
+
+func TestDownloadManager_ChangeClient(t *testing.T) {
+
+
+	type fields struct {
+		limit  int64
+		client *http.Client
+	}
+	type args struct {
+		c *http.Client
+	}
+
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Passing a client should not return an error",
+			fields: fields{client: nil,limit: 0},
+			args: args{
+				c: http.DefaultClient,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Passing a nil client should  return an error",
+			fields: fields{client: nil,limit: 0},
+			args: args{
+				c: nil,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &DownloadManager{
+				limit:  tt.fields.limit,
+				client: tt.fields.client,
+			}
+			if err := m.ChangeClient(tt.args.c); (err != nil) != tt.wantErr {
+				t.Errorf("ChangeClient() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

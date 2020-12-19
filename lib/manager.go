@@ -63,6 +63,7 @@ func normalizeMaxConnections(dataSize int64, maxConnections int64, minSizeForCon
 
 type DownloadManager struct {
 	limit int64
+	client *http.Client
 }
 
 func NewManager(limit int64) *DownloadManager {
@@ -71,12 +72,26 @@ func NewManager(limit int64) *DownloadManager {
 	}
 }
 
+// ChangeClient - Allow setting a different client to be used for http requests
+func (m *DownloadManager) ChangeClient(c *http.Client) error{
+	if c == nil{
+		return errors.New("invalid client")
+	}
+	m.client = c
+	return nil
+}
+
 func (m *DownloadManager) DownloadBody(url string) ([]byte, error) {
+	var client *http.Client
+	client = m.client
+	if client == nil{
+		client = http.DefaultClient
+	}
 	fragments := make([]Fragment, 0) // Keep data received from range requests
 	maxConnections := m.limit        // Number of maximum concurrent go routines
 	body := make([]byte, 0)
 	var globalError error
-	response, err := http.Head(url) // We perform a Head request to get header information
+	response, err := client.Head(url) // We perform a Head request to get header information
 
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("received code %d", response.StatusCode)
@@ -122,7 +137,7 @@ func (m *DownloadManager) DownloadBody(url string) ([]byte, error) {
 			defer waitgroup.Done()
 			req, _ := http.NewRequest("GET", url, nil)
 			req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d", lowerBound, upperBound))
-			res, e := http.DefaultClient.Do(req)
+			res, e := client.Do(req)
 			if res == nil {
 				globalError = errors.New("empty response body")
 			}
